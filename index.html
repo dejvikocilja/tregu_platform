@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="sq" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tregu - The Future of Commerce</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Manrope', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              background: '#050505',
+              surface: '#0F0F0F',
+              surfaceHighlight: '#1A1A1A',
+              border: '#333333',
+              primary: '#FFFFFF',
+              secondary: '#888888',
+              accent: '#3B82F6', // Subtle blue for interaction states
+            },
+            letterSpacing: {
+              tighter: '-0.05em',
+              tight: '-0.025em',
+              widest: '0.25em',
+            },
+            animation: {
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "gsap": "https://esm.sh/gsap@3.12.5",
+    "gsap/ScrollTrigger": "https://esm.sh/gsap@3.12.5/ScrollTrigger",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "gsap/": "https://aistudiocdn.com/gsap@^3.13.0/"
+  }
+}
+</script>
+<style>
+  /* Smooth scrolling for the whole document */
+  html.lenis {
+    height: auto;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  body {
+    background-color: #050505;
+    color: #f0f0f0;
+  }
+</style>
+</head>
+  <body class="antialiased overflow-x-hidden">
+    <div id="root"></div>
+  </body>
+</html>
