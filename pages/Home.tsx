@@ -100,7 +100,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             // Using a tech/industrial style video. 
             // Note: Ensure the server allows range requests for smooth scrubbing, 
             // otherwise it might be jumpy. Pexels usually works okay.
-            src="https://videos.pexels.com/video-files/3121459/3121459-uhd_2560_1440_25fps.mp4"
+            src="https://www.pexels.com/video/stunning-waves-crashing-on-sardinian-coastline-34475371/"
         />
         
         {/* Grain Overlay */}
