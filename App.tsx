@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import CreateListing from './pages/CreateListing';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import ListingDetail from './pages/ListingDetail';
 import { User, PageView } from './types';
 import { getCurrentUser, logoutUserMock } from './services/storage';
 
@@ -54,14 +55,17 @@ const App = () => {
         return <Login onLogin={handleLogin} initialView="REGISTER" />;
         
       case 'LISTING_DETAIL':
-        // Placeholder for detail view
-        return (
-            <div className="max-w-4xl mx-auto py-40 px-6 text-center">
-                <h2 className="text-4xl font-light uppercase mb-4">Signal Received: {detailId}</h2>
-                <p className="font-mono text-secondary text-sm">Details classified.</p>
-                <button onClick={() => setCurrentView('HOME')} className="mt-8 font-mono text-xs uppercase border-b border-white pb-1">Return</button>
-            </div>
-        );
+  if (!detailId) {
+    setCurrentView('HOME');
+    return null;
+  }
+  return (
+    <ListingDetail 
+      listingId={detailId}
+      onBack={() => setCurrentView('HOME')}
+      currentUser={currentUser}
+    />
+  );
         
       case 'ADMIN':
           return (
