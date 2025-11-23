@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Listing, Category } from '../types';
+import { Listing, Category, ListingType } from '../types';
 import { CATEGORIES } from '../constants';
 import { getListings } from '../services/storage';
 import ListingCard from '../components/ListingCard';
+import AdvancedFilter, { FilterOptions } from '../components/AdvancedFilter';
 import { SectionHeader, Button, Input, Select } from '../components/DesignSystem';
-import { Search, ArrowDown } from 'lucide-react';
+import { Search, ArrowDown, SlidersHorizontal } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -21,6 +22,17 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [hasEntered, setHasEntered] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  const [advancedFilters, setAdvancedFilters] = useState<FilterOptions>({
+    category: 'Të gjitha',
+    minPrice: '',
+    maxPrice: '',
+    currency: 'ALL',
+    location: '',
+    listingType: 'ALL',
+    sortBy: 'newest'
+  });
   
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -72,7 +84,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
     const ctx = gsap.context(() => {
       if (videoRef.current && containerRef.current && heroContentRef.current) {
         
-        // Create main timeline
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
@@ -81,7 +92,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             pin: true,
             scrub: 1,
             onUpdate: (self) => {
-              // Scrub video based on scroll
               if (videoRef.current && !isNaN(videoRef.current.duration)) {
                 const videoTime = self.progress * videoRef.current.duration;
                 videoRef.current.currentTime = videoTime;
@@ -90,7 +100,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           }
         });
 
-        // Phase 1: Scale and fade main title
         tl.to(".hero-main-title", {
           scale: 1.2,
           opacity: 0,
@@ -98,14 +107,12 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           ease: "power2.in"
         }, 0);
 
-        // Phase 2: Fade in subtitle
         tl.fromTo(".hero-subtitle", 
           { opacity: 0, y: 50 },
           { opacity: 1, y: 0, duration: 0.3 },
           0.2
         );
 
-        // Phase 3: Fade subtitle and show CTA
         tl.to(".hero-subtitle", {
           opacity: 0,
           y: -50,
@@ -118,13 +125,11 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           0.6
         );
 
-        // Phase 4: Final fade to content
         tl.to(heroContentRef.current, {
           opacity: 0,
           duration: 0.2
         }, 0.85);
 
-        // Video opacity changes
         tl.to(videoRef.current, {
           opacity: 0.3,
           duration: 0.2
@@ -135,13 +140,69 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
     return () => ctx.revert();
   }, [hasEntered]);
 
+  // Sync basic category filter with advanced filter
+  useEffect(() => {
+    setAdvancedFilters(prev => ({ ...prev, category: selectedCategory }));
+  }, [selectedCategory]);
+
+  const handleApplyFilters = (filters: FilterOptions) => {
+    setAdvancedFilters(filters);
+    setSelectedCategory(filters.category);
+  };
+
   const filteredListings = useMemo(() => {
-    return listings.filter(l => {
-      const matchesSearch = l.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'Të gjitha' || l.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+    let result = listings.filter(l => {
+      // Search term
+      const matchesSearch = l.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           l.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Category
+      const matchesCategory = advancedFilters.category === 'Të gjitha' || 
+                             l.category === advancedFilters.category;
+      
+      // Price range
+      const matchesMinPrice = !advancedFilters.minPrice || 
+                             l.price >= Number(advancedFilters.minPrice);
+      const matchesMaxPrice = !advancedFilters.maxPrice || 
+                             l.price <= Number(advancedFilters.maxPrice);
+      
+      // Currency
+      const matchesCurrency = advancedFilters.currency === 'ALL' || 
+                             l.currency === advancedFilters.currency;
+      
+      // Location
+      const matchesLocation = !advancedFilters.location || 
+                             l.location.toLowerCase().includes(advancedFilters.location.toLowerCase());
+      
+      // Listing type
+      const matchesType = advancedFilters.listingType === 'ALL' || 
+                         l.type === advancedFilters.listingType;
+      
+      return matchesSearch && matchesCategory && matchesMinPrice && 
+             matchesMaxPrice && matchesCurrency && matchesLocation && matchesType;
     });
-  }, [listings, searchTerm, selectedCategory]);
+
+    // Sorting
+    switch (advancedFilters.sortBy) {
+      case 'newest':
+        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'oldest':
+        result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case 'price-low':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'popular':
+        result.sort((a, b) => b.views - a.views);
+        break;
+    }
+
+    return result;
+  }, [listings, searchTerm, advancedFilters]);
 
   return (
     <>
@@ -151,14 +212,12 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           ref={loaderRef}
           className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center"
         >
-          {/* Logo */}
           <div className="mb-12">
             <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-tighter text-white">
               Tregu
             </h1>
           </div>
 
-          {/* Progress Bar */}
           <div className="w-64 h-[2px] bg-border overflow-hidden">
             <div 
               className="h-full bg-white transition-all duration-300 ease-out"
@@ -166,12 +225,19 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             />
           </div>
 
-          {/* Loading Text */}
           <div className="mt-6 font-mono text-xs text-secondary uppercase tracking-widest">
             {isLoading ? 'Initializing System...' : 'Ready'}
           </div>
         </div>
       )}
+
+      {/* ADVANCED FILTER PANEL */}
+      <AdvancedFilter 
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        onApply={handleApplyFilters}
+        currentFilters={advancedFilters}
+      />
 
       {/* MAIN CONTENT */}
       <div className="bg-background min-h-screen">
@@ -179,7 +245,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         {/* CINEMATIC HERO */}
         <div ref={containerRef} className="relative h-screen w-full overflow-hidden">
           
-          {/* Background Video */}
           <video 
             ref={videoRef}
             muted 
@@ -189,10 +254,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             src="https://videos.pexels.com/video-files/3129957/3129957-uhd_2560_1440_30fps.mp4"
           />
           
-          {/* Dark Overlay */}
           <div className="absolute inset-0 bg-black/40" />
           
-          {/* Grain Texture */}
           <div className="absolute inset-0 opacity-30 mix-blend-overlay pointer-events-none"
                style={{
                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='3.5' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
@@ -200,13 +263,10 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                }}
           />
           
-          {/* Vignette */}
           <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black opacity-60" />
 
-          {/* Content Layers */}
           <div ref={heroContentRef} className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4">
             
-            {/* Main Title */}
             <div className="hero-main-title text-center">
               <h1 className="text-[15vw] md:text-[12vw] leading-none font-bold uppercase tracking-tighter text-white mb-4"
                   style={{ 
@@ -220,7 +280,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               </p>
             </div>
 
-            {/* Subtitle Message */}
             <div className="hero-subtitle opacity-0 absolute text-center max-w-3xl px-6">
               <h2 className="text-4xl md:text-7xl font-light uppercase tracking-tight text-white mb-6 leading-tight">
                 Where Albania<br/>
@@ -229,7 +288,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               <div className="w-24 h-[1px] bg-white/30 mx-auto" />
             </div>
 
-            {/* CTA Section */}
             <div className="hero-cta opacity-0 absolute text-center max-w-2xl px-6">
               <p className="text-lg md:text-xl text-white/80 mb-8 leading-relaxed">
                 Access thousands of verified listings.<br/>
@@ -248,7 +306,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               </button>
             </div>
 
-            {/* Scroll Indicator */}
             <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
               <span className="text-xs font-mono text-white/50 uppercase tracking-widest">Scroll</span>
               <div className="w-[1px] h-16 bg-white/20 relative overflow-hidden">
@@ -261,7 +318,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         {/* LISTINGS SECTION */}
         <div id="listings-section" className="relative z-30 bg-background border-t border-white/10 min-h-screen">
           
-          {/* Category Marquee */}
           <div className="border-b border-white/10 overflow-hidden whitespace-nowrap py-4 bg-surface">
             <div className="inline-block animate-marquee">
               {[...CATEGORIES, ...CATEGORIES].map((cat, idx) => (
@@ -299,7 +355,12 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                   </Select>
                 </div>
                 <div className="md:col-span-4 flex justify-end">
-                  <Button onClick={() => {}} variant="outline" className="w-full md:w-auto">
+                  <Button 
+                    onClick={() => setIsFilterOpen(true)} 
+                    variant="outline" 
+                    className="w-full md:w-auto"
+                  >
+                    <SlidersHorizontal size={16} className="mr-2" />
                     Advanced Filter
                   </Button>
                 </div>
@@ -315,7 +376,24 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               </div>
             ) : (
               <div className="border border-dashed border-white/20 p-20 text-center">
-                <p className="font-mono text-secondary">NO DATA FOUND</p>
+                <p className="font-mono text-secondary uppercase mb-4">NO DATA FOUND</p>
+                <Button 
+                  onClick={() => {
+                    setSearchTerm('');
+                    handleApplyFilters({
+                      category: 'Të gjitha',
+                      minPrice: '',
+                      maxPrice: '',
+                      currency: 'ALL',
+                      location: '',
+                      listingType: 'ALL',
+                      sortBy: 'newest'
+                    });
+                  }}
+                  variant="outline"
+                >
+                  Reset Filters
+                </Button>
               </div>
             )}
           </div>
