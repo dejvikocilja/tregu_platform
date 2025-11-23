@@ -96,11 +96,12 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             muted 
             playsInline
             preload="auto"
+            poster="https://images.pexels.com/videos/3130182/free-video-3130182.jpg?auto=compress&cs=tinysrgb&dpr=1&w=500"
             className="absolute inset-0 w-full h-full object-cover opacity-60"
             // Using a tech/industrial style video. 
             // Note: Ensure the server allows range requests for smooth scrubbing, 
             // otherwise it might be jumpy. Pexels usually works okay.
-            src="https://www.pexels.com/video/stunning-waves-crashing-on-sardinian-coastline-34475371/"
+            src="https://videos.pexels.com/video-files/3191625/3191625-uhd_2560_1440_25fps.mp4"
         />
         
         {/* Grain Overlay */}
