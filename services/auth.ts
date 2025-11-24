@@ -11,7 +11,8 @@ export const signUpWithEmail = async (email: string, password: string, name: str
     options: {
       data: {
         name: name,
-      }
+      },
+      emailRedirectTo: `${window.location.origin}/auth/confirm`
     }
   });
 
@@ -22,7 +23,10 @@ export const signUpWithEmail = async (email: string, password: string, name: str
     throw error;
   }
 
-  // Create user profile in public.users table
+  // Note: With email confirmation enabled, the user won't be logged in yet
+  // They need to click the link in their email first
+  
+  // We still create the profile, but it won't be accessible until email is confirmed
   if (data.user) {
     console.log('🔵 Creating user profile for user:', data.user.id);
     
@@ -33,13 +37,14 @@ export const signUpWithEmail = async (email: string, password: string, name: str
         name: name,
         free_listing_used: false,
         listing_count: 0,
-        is_verified: true,
+        is_verified: false, // Will be set to true after email confirmation
         role: 'user'
       } as any);
       console.log('✅ User profile created successfully');
     } catch (profileError) {
       console.error('❌ Error creating profile:', profileError);
-      throw profileError;
+      // Don't throw here - the auth user was created successfully
+      console.log('⚠️ Profile creation failed, but user can still verify email');
     }
   }
 
@@ -68,7 +73,7 @@ export const signInWithEmail = async (email: string, password: string) => {
 // Sign in with Google
 export const signInWithGoogle = async () => {
   console.log('🔵 signInWithGoogle called');
-  console.log('🔵 Redirect URL:', `${window.location.origin}/auth/callback`);
+  console.log('🔵 Redirect URL:', `${window.location.origin}`);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
