@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithFacebook } from '../services/auth';
+import { signInWithEmail, signUpWithEmail, signInWithGoogle } from '../services/auth';
 import { getUserProfile } from '../services/database';
 import { User } from '../types';
 import { Button, Input, Card } from '../components/DesignSystem';
@@ -107,18 +107,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
     }
   };
 
-  const handleFacebookLogin = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await signInWithFacebook();
-      // OAuth will redirect
-    } catch (err: any) {
-      setError(err.message);
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md p-12 border border-border">
@@ -207,22 +195,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-4">
+          <div className="mt-6">
             <Button 
               onClick={handleGoogleLogin}
               variant="outline"
               disabled={loading}
               type="button"
+              className="w-full"
             >
-              Google
-            </Button>
-            <Button 
-              onClick={handleFacebookLogin}
-              variant="outline"
-              disabled={loading}
-              type="button"
-            >
-              Facebook
+              Continue with Google
             </Button>
           </div>
         </div>
