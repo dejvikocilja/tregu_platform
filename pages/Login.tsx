@@ -18,17 +18,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setError('');
   setLoading(true);
 
-  console.log('🔵 Starting authentication...', { view, email }); // Debug log
+  console.log('🔵 Starting authentication...', { view, email });
 
   try {
     if (view === 'LOGIN') {
       console.log('🔵 Attempting login...');
-      // Sign in
       const result = await signInWithEmail(email, password);
       console.log('✅ Login result:', result);
       
@@ -49,7 +48,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
       }
     } else {
       console.log('🔵 Attempting registration...');
-      // Sign up
+      
       if (!name.trim()) {
         setError('Please enter your name');
         setLoading(false);
@@ -66,7 +65,18 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
       const result = await signUpWithEmail(email, password, name);
       console.log('✅ Sign up result:', result);
       
-      if (result.user) {
+      // Check if email confirmation is required
+      if (result.user && !result.session) {
+        // Email confirmation required
+        setError('');
+        setLoading(false);
+        alert('✅ Registration successful! Please check your email to confirm your account.');
+        setView('LOGIN');
+        return;
+      }
+      
+      // If session exists, user is logged in (email confirmation disabled)
+      if (result.user && result.session) {
         console.log('🔵 Fetching new user profile...');
         const profile = await getUserProfile(result.user.id);
         console.log('✅ New profile loaded:', profile);
@@ -90,11 +100,18 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
       status: err.status,
       details: err.details
     });
-    setError(err.message || 'Authentication failed. Check console for details.');
+    
+    // Handle specific error messages
+    if (err.message.includes('Email not confirmed')) {
+      setError('Please confirm your email before logging in. Check your inbox.');
+    } else {
+      setError(err.message || 'Authentication failed. Check console for details.');
+    }
   } finally {
     setLoading(false);
   }
 };
+  
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
