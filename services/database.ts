@@ -114,3 +114,30 @@ export const getCategories = async () => {
   if (error) throw error;
   return data || [];
 };
+// Get user profile
+export const getUserProfile = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+// Create or update user profile
+export const upsertUserProfile = async (userId: string, profile: any) => {
+  const { data, error } = await supabase
+    .from('users')
+    .upsert({
+      id: userId,
+      ...profile,
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
