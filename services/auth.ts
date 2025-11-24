@@ -3,6 +3,8 @@ import { upsertUserProfile } from './database';
 
 // Sign up with email and password
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
+  console.log('🔵 signUpWithEmail called with:', { email, name });
+  
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -13,19 +15,32 @@ export const signUpWithEmail = async (email: string, password: string, name: str
     }
   });
 
-  if (error) throw error;
+  console.log('🔵 Supabase signUp response:', { data, error });
+
+  if (error) {
+    console.error('❌ Sign up error:', error);
+    throw error;
+  }
 
   // Create user profile in public.users table
   if (data.user) {
-    await upsertUserProfile(data.user.id, {
-      id: data.user.id,
-      email: email,
-      name: name,
-      free_listing_used: false,
-      listing_count: 0,
-      is_verified: true, // Auto-verify for now
-      role: 'user'
-    } as any);
+    console.log('🔵 Creating user profile for user:', data.user.id);
+    
+    try {
+      await upsertUserProfile(data.user.id, {
+        id: data.user.id,
+        email: email,
+        name: name,
+        free_listing_used: false,
+        listing_count: 0,
+        is_verified: true,
+        role: 'user'
+      } as any);
+      console.log('✅ User profile created successfully');
+    } catch (profileError) {
+      console.error('❌ Error creating profile:', profileError);
+      throw profileError;
+    }
   }
 
   return data;
@@ -33,38 +48,42 @@ export const signUpWithEmail = async (email: string, password: string, name: str
 
 // Sign in with email and password
 export const signInWithEmail = async (email: string, password: string) => {
+  console.log('🔵 signInWithEmail called');
+  
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error) throw error;
+  console.log('🔵 Sign in response:', { data, error });
+
+  if (error) {
+    console.error('❌ Sign in error:', error);
+    throw error;
+  }
+  
   return data;
 };
 
 // Sign in with Google
 export const signInWithGoogle = async () => {
+  console.log('🔵 signInWithGoogle called');
+  console.log('🔵 Redirect URL:', `${window.location.origin}/auth/callback`);
+  
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`
+      redirectTo: `${window.location.origin}`
     }
   });
 
-  if (error) throw error;
-  return data;
-};
+  console.log('🔵 Google OAuth response:', { data, error });
 
-// Sign in with Facebook
-export const signInWithFacebook = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'facebook',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`
-    }
-  });
-
-  if (error) throw error;
+  if (error) {
+    console.error('❌ Google sign in error:', error);
+    throw error;
+  }
+  
   return data;
 };
 
