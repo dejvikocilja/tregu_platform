@@ -73,12 +73,22 @@ export const signInWithEmail = async (email: string, password: string) => {
 // Sign in with Google
 export const signInWithGoogle = async () => {
   console.log('🔵 signInWithGoogle called');
-  console.log('🔵 Redirect URL:', `${window.location.origin}`);
+  
+  // Force production URL, never localhost
+  const redirectUrl = window.location.hostname === 'localhost' 
+    ? 'https://tregu-platform.vercel.app'
+    : window.location.origin;
+  
+  console.log('🔵 Redirect URL:', redirectUrl);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}`
+      redirectTo: redirectUrl,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      }
     }
   });
 
