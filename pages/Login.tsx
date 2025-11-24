@@ -19,64 +19,82 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    try {
-      if (view === 'LOGIN') {
-        // Sign in
-        const { user } = await signInWithEmail(email, password);
+  console.log('🔵 Starting authentication...', { view, email }); // Debug log
+
+  try {
+    if (view === 'LOGIN') {
+      console.log('🔵 Attempting login...');
+      // Sign in
+      const result = await signInWithEmail(email, password);
+      console.log('✅ Login result:', result);
+      
+      if (result.user) {
+        console.log('🔵 Fetching user profile...');
+        const profile = await getUserProfile(result.user.id);
+        console.log('✅ Profile loaded:', profile);
         
-        if (user) {
-          const profile = await getUserProfile(user.id);
-          onLogin({
-            id: profile.id,
-            email: profile.email,
-            name: profile.name || 'User',
-            joinedDate: profile.created_at,
-            listingCount: profile.listing_count,
-            isVerified: profile.is_verified,
-            role: profile.role
-          });
-        }
-      } else {
-        // Sign up
-        if (!name.trim()) {
-          setError('Please enter your name');
-          setLoading(false);
-          return;
-        }
-
-        if (password.length < 6) {
-          setError('Password must be at least 6 characters');
-          setLoading(false);
-          return;
-        }
-
-        const { user } = await signUpWithEmail(email, password, name);
-        
-        if (user) {
-          const profile = await getUserProfile(user.id);
-          onLogin({
-            id: profile.id,
-            email: profile.email,
-            name: profile.name || 'User',
-            joinedDate: profile.created_at,
-            listingCount: profile.listing_count,
-            isVerified: profile.is_verified,
-            role: profile.role
-          });
-        }
+        onLogin({
+          id: profile.id,
+          email: profile.email,
+          name: profile.name || 'User',
+          joinedDate: profile.created_at,
+          listingCount: profile.listing_count,
+          isVerified: profile.is_verified,
+          role: profile.role
+        });
       }
-    } catch (err: any) {
-      console.error('Auth error:', err);
-      setError(err.message || 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+    } else {
+      console.log('🔵 Attempting registration...');
+      // Sign up
+      if (!name.trim()) {
+        setError('Please enter your name');
+        setLoading(false);
+        return;
+      }
 
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters');
+        setLoading(false);
+        return;
+      }
+
+      console.log('🔵 Calling signUpWithEmail...');
+      const result = await signUpWithEmail(email, password, name);
+      console.log('✅ Sign up result:', result);
+      
+      if (result.user) {
+        console.log('🔵 Fetching new user profile...');
+        const profile = await getUserProfile(result.user.id);
+        console.log('✅ New profile loaded:', profile);
+        
+        onLogin({
+          id: profile.id,
+          email: profile.email,
+          name: profile.name || 'User',
+          joinedDate: profile.created_at,
+          listingCount: profile.listing_count,
+          isVerified: profile.is_verified,
+          role: profile.role
+        });
+      }
+    }
+  } catch (err: any) {
+    console.error('❌ Auth error:', err);
+    console.error('❌ Error details:', {
+      message: err.message,
+      code: err.code,
+      status: err.status,
+      details: err.details
+    });
+    setError(err.message || 'Authentication failed. Check console for details.');
+  } finally {
+    setLoading(false);
+  }
+};
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
