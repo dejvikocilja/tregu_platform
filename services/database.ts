@@ -128,16 +128,32 @@ export const getUserProfile = async (userId: string) => {
 
 // Create or update user profile
 export const upsertUserProfile = async (userId: string, profile: any) => {
+  console.log('🔵 upsertUserProfile called with:', { userId, profile });
+  
   const { data, error } = await supabase
     .from('users')
     .upsert({
       id: userId,
-      ...profile,
+      email: profile.email,
+      name: profile.name,
+      phone: profile.phone || null,
+      avatar_url: profile.avatar_url || null,
+      location: profile.location || null,
+      free_listing_used: profile.free_listing_used || false,
+      listing_count: profile.listing_count || 0,
+      is_verified: profile.is_verified || false,
+      role: profile.role || 'user',
       updated_at: new Date().toISOString()
     })
     .select()
     .single();
   
-  if (error) throw error;
+  console.log('🔵 Upsert result:', { data, error });
+  
+  if (error) {
+    console.error('❌ Error upserting profile:', error);
+    throw error;
+  }
+  
   return data;
 };
