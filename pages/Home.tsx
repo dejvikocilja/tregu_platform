@@ -251,7 +251,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             playsInline
             preload="auto"
             className="absolute inset-0 w-full h-full object-cover opacity-70"
-            src="https://videos.pexels.com/video-files/3129957/3129957-uhd_2560_1440_30fps.mp4"
+            src="https://youtu.be/4J-mhsLwUDQ?si=ifuMQgcam6Uy1v8m"
           />
           
           <div className="absolute inset-0 bg-black/40" />
