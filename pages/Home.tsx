@@ -79,7 +79,85 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   useEffect(() => {
     if (!hasEntered) return;
     
-    setListings(getListings());
+    // Main scroll animation
+useEffect(() => {
+  if (!hasEntered) return;
+  
+  // Load listings from Supabase
+  const loadListings = async () => {
+    try {
+      const { getListings: getSupabaseListings } = await import('../services/database');
+      const data = await getSupabaseListings();
+      console.log('✅ Loaded listings from Supabase:', data.length);
+      setListings(data);
+    } catch (error) {
+      console.error('❌ Error loading listings:', error);
+      // Fallback to localStorage
+      const { getListings: getLocalListings } = await import('../services/storage');
+      setListings(getLocalListings());
+    }
+  };
+  
+  loadListings();
+  
+  const ctx = gsap.context(() => {
+    if (videoRef.current && containerRef.current && heroContentRef.current) {
+      
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "+=200%",
+          pin: true,
+          scrub: 1,
+          onUpdate: (self) => {
+            if (videoRef.current && !isNaN(videoRef.current.duration)) {
+              const videoTime = self.progress * videoRef.current.duration;
+              videoRef.current.currentTime = videoTime;
+            }
+          }
+        }
+      });
+
+      tl.to(".hero-main-title", {
+        scale: 1.2,
+        opacity: 0,
+        duration: 0.3,
+        ease: "power2.in"
+      }, 0);
+
+      tl.fromTo(".hero-subtitle", 
+        { opacity: 0, y: 50 },
+        { opacity: 1, y: 0, duration: 0.3 },
+        0.2
+      );
+
+      tl.to(".hero-subtitle", {
+        opacity: 0,
+        y: -50,
+        duration: 0.3
+      }, 0.5);
+
+      tl.fromTo(".hero-cta",
+        { opacity: 0, y: 50 },
+        { opacity: 1, y: 0, duration: 0.3 },
+        0.6
+      );
+
+      tl.to(heroContentRef.current, {
+        opacity: 0,
+        duration: 0.2
+      }, 0.85);
+
+      tl.to(videoRef.current, {
+        opacity: 0.3,
+        duration: 0.2
+      }, 0.85);
+    }
+  }, containerRef);
+
+  return () => ctx.revert();
+}, [hasEntered]);
     
     const ctx = gsap.context(() => {
       if (videoRef.current && containerRef.current && heroContentRef.current) {
