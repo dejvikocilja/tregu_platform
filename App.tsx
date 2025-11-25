@@ -15,36 +15,58 @@ const App = () => {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
-  // Listen for auth changes
+  // Listen for auth changes with timeout
   useEffect(() => {
+    let mounted = true;
+
+    // Set timeout to stop loading after 3 seconds
+    const timeout = setTimeout(() => {
+      if (mounted) {
+        console.log('⏰ Auth check timeout - continuing without user');
+        setIsLoadingAuth(false);
+      }
+    }, 3000);
+
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event);
+      console.log('🔵 Auth event:', event, 'Session:', !!session);
       
+      if (!mounted) return;
+
       if (session?.user) {
-        // User logged in
         try {
+          console.log('🔵 Loading profile for user:', session.user.id);
           const profile = await getUserProfile(session.user.id);
-          setCurrentUser({
-            id: profile.id,
-            email: profile.email,
-            name: profile.name || 'User',
-            joinedDate: profile.created_at,
-            listingCount: profile.listing_count,
-            isVerified: profile.is_verified,
-            role: profile.role
-          });
+          console.log('✅ Profile loaded:', profile);
+          
+          if (mounted) {
+            setCurrentUser({
+              id: profile.id,
+              email: profile.email,
+              name: profile.name || 'User',
+              joinedDate: profile.created_at,
+              listingCount: profile.listing_count,
+              isVerified: profile.is_verified,
+              role: profile.role
+            });
+          }
         } catch (error) {
-          console.error('Error loading user profile:', error);
+          console.error('❌ Error loading user profile:', error);
         }
       } else {
-        // User logged out
-        setCurrentUser(null);
+        if (mounted) {
+          setCurrentUser(null);
+        }
       }
       
-      setIsLoadingAuth(false);
+      if (mounted) {
+        clearTimeout(timeout);
+        setIsLoadingAuth(false);
+      }
     });
 
     return () => {
+      mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -64,13 +86,14 @@ const App = () => {
     }
   };
 
-  // Show loading while checking auth
+  // Show loading while checking auth (max 3 seconds)
   if (isLoadingAuth) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="font-mono text-xs text-secondary uppercase tracking-widest">Authenticating...</p>
+          <p className="font-mono text-xs text-secondary/50 mt-2">This should only take a moment</p>
         </div>
       </div>
     );
