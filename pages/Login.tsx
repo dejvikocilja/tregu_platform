@@ -18,64 +18,17 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Test Supabase connection
-  const testSupabaseConnection = async () => {
-    console.log('🧪 Testing Supabase connection...');
-    
-    try {
-      const { supabase } = await import('../services/supabase');
-      
-      console.log('✅ Supabase client exists:', !!supabase);
-      
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .limit(1);
-      
-      if (error) {
-        console.error('❌ Supabase query error:', error);
-        alert(`Supabase Error: ${error.message}`);
-      } else {
-        console.log('✅ Supabase query success:', data);
-        alert(`✅ Supabase Connected! Found ${data?.length || 0} categories`);
-      }
-      
-      console.log('Environment check:', {
-        hasUrl: !!import.meta.env.VITE_SUPABASE_URL,
-        hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-        url: import.meta.env.VITE_SUPABASE_URL?.substring(0, 30) + '...'
-      });
-      
-    } catch (err) {
-      console.error('❌ Test failed:', err);
-      alert(`Test Failed: ${err}`);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('=================================');
-    console.log('🔵 FORM SUBMITTED - handleSubmit called!');
-    console.log('View:', view);
-    console.log('Email:', email);
-    console.log('Password length:', password.length);
-    console.log('Name:', name);
-    console.log('=================================');
-    
     setError('');
     setLoading(true);
 
     try {
       if (view === 'LOGIN') {
-        console.log('🔵 LOGIN PATH - Attempting login...');
         const result = await signInWithEmail(email, password);
-        console.log('✅ Login result:', result);
         
         if (result.user) {
-          console.log('🔵 Fetching user profile for:', result.user.id);
           const profile = await getUserProfile(result.user.id);
-          console.log('✅ Profile loaded:', profile);
           
           onLogin({
             id: profile.id,
@@ -88,45 +41,32 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
           });
         }
       } else {
-        console.log('🔵 REGISTER PATH - Starting registration...');
-        
         // Validation
         if (!name.trim()) {
-          console.log('❌ Name is empty');
           setError('Please enter your name');
           setLoading(false);
           return;
         }
 
         if (!email.trim() || !email.includes('@')) {
-          console.log('❌ Invalid email');
           setError('Please enter a valid email address');
           setLoading(false);
           return;
         }
 
         if (password.length < 6) {
-          console.log('❌ Password too short');
           setError('Password must be at least 6 characters');
           setLoading(false);
           return;
         }
 
-        console.log('✅ Validation passed');
-        console.log('🔵 Calling signUpWithEmail...');
-        
         const result = await signUpWithEmail(email, password, name);
-        
-        console.log('✅ Sign up result:', result);
-        console.log('User object:', result.user);
-        console.log('Session object:', result.session);
         
         // Check if email confirmation is required
         if (result.user && !result.session) {
-          console.log('📧 Email confirmation required');
           setError('');
           setLoading(false);
-          alert('✅ Registration successful! Please check your email to confirm your account. Check spam folder if you don\'t see it.');
+          alert('✅ Registration successful! Please check your email to confirm your account.');
           setEmail('');
           setPassword('');
           setName('');
@@ -134,11 +74,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
           return;
         }
         
-        // If session exists, user is logged in (email confirmation disabled)
+        // If session exists, user is logged in
         if (result.user && result.session) {
-          console.log('🔵 No email confirmation needed, fetching profile...');
           const profile = await getUserProfile(result.user.id);
-          console.log('✅ New profile loaded:', profile);
           
           onLogin({
             id: profile.id,
@@ -152,14 +90,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
         }
       }
     } catch (err: any) {
-      console.error('=================================');
-      console.error('❌ AUTHENTICATION ERROR');
-      console.error('Error object:', err);
-      console.error('Message:', err.message);
-      console.error('Code:', err.code);
-      console.error('Status:', err.status);
-      console.error('=================================');
-      
       if (err.message?.includes('Email not confirmed')) {
         setError('Please confirm your email before logging in. Check your inbox.');
       } else if (err.message?.includes('Invalid login credentials')) {
@@ -167,10 +97,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
       } else if (err.message?.includes('User already registered')) {
         setError('This email is already registered. Please login instead.');
       } else {
-        setError(err.message || 'Authentication failed. Check console for details.');
+        setError(err.message || 'Authentication failed. Please try again.');
       }
     } finally {
-      console.log('🔵 Setting loading to false');
       setLoading(false);
     }
   };
@@ -186,24 +115,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
     }
   };
 
-  // DIRECT BUTTON CLICK HANDLER FOR DEBUGGING
-  const handleButtonClick = () => {
-    console.log('🔴 BUTTON CLICKED DIRECTLY!');
-    console.log('Form values:', { email, password, name, view });
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md p-12 border border-border">
-        
-        {/* Test Button */}
-        <button
-          onClick={testSupabaseConnection}
-          className="w-full mb-4 p-2 bg-blue-500/20 border border-blue-500 text-blue-300 text-xs font-mono uppercase hover:bg-blue-500/30"
-          type="button"
-        >
-          🧪 Test Supabase Connection
-        </button>
         
         <div className="mb-12 text-center">
           <h2 className="text-3xl font-light uppercase tracking-tight mb-2">
@@ -228,10 +142,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
               <Input 
                 type="text" 
                 value={name}
-                onChange={(e) => {
-                  console.log('Name changed:', e.target.value);
-                  setName(e.target.value);
-                }}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
                 disabled={loading}
               />
@@ -246,10 +157,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
             <Input 
               type="email" 
               value={email}
-              onChange={(e) => {
-                console.log('Email changed:', e.target.value);
-                setEmail(e.target.value);
-              }}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               disabled={loading}
             />
@@ -263,10 +171,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
             <Input 
               type="password" 
               value={password}
-              onChange={(e) => {
-                console.log('Password changed, length:', e.target.value.length);
-                setPassword(e.target.value);
-              }}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               disabled={loading}
             />
@@ -276,7 +181,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
             type="submit"
             className="w-full" 
             disabled={loading}
-            onClick={handleButtonClick}
           >
             {loading ? (
               <>
@@ -316,10 +220,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
         <div className="mt-8 text-center">
           {view === 'LOGIN' ? (
             <button 
-              onClick={() => {
-                console.log('Switching to REGISTER view');
-                setView('REGISTER');
-              }} 
+              onClick={() => setView('REGISTER')} 
               className="text-[10px] font-mono uppercase text-secondary hover:text-white tracking-widest"
               disabled={loading}
               type="button"
@@ -328,10 +229,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, initialView }) => {
             </button>
           ) : (
             <button 
-              onClick={() => {
-                console.log('Switching to LOGIN view');
-                setView('LOGIN');
-              }} 
+              onClick={() => setView('LOGIN')} 
               className="text-[10px] font-mono uppercase text-secondary hover:text-white tracking-widest"
               disabled={loading}
               type="button"
