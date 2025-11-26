@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, PageView } from '../types';
-import { Menu, X, Plus, User as UserIcon } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -28,15 +28,41 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, setCurrentView, 
         {/* Right Nav Actions */}
         <div className="pointer-events-auto flex items-center gap-8">
           <div className="hidden md:flex items-center gap-6 text-xs font-mono uppercase tracking-widest">
-             <button onClick={() => setCurrentView('HOME')} className="hover:underline decoration-1 underline-offset-4">Index</button>
+             <button 
+               onClick={() => setCurrentView('HOME')} 
+               className="hover:underline decoration-1 underline-offset-4"
+             >
+               Home
+             </button>
+             
              {currentUser ? (
                 <>
-                   <button onClick={() => setCurrentView('DASHBOARD')} className="hover:underline decoration-1 underline-offset-4">Dashboard</button>
-                   <button onClick={() => setCurrentView('CREATE_LISTING')} className="hover:underline decoration-1 underline-offset-4">Post Ad</button>
-                   <button onClick={onLogout} className="text-red-500 hover:text-red-400">Exit</button>
+                   <button 
+                     onClick={() => setCurrentView('DASHBOARD')} 
+                     className="hover:underline decoration-1 underline-offset-4"
+                   >
+                     Dashboard
+                   </button>
+                   <button 
+                     onClick={() => setCurrentView('CREATE_LISTING')} 
+                     className="hover:underline decoration-1 underline-offset-4"
+                   >
+                     Create Listing
+                   </button>
+                   <button 
+                     onClick={onLogout} 
+                     className="text-red-500 hover:text-red-400"
+                   >
+                     Logout
+                   </button>
                 </>
              ) : (
-                <button onClick={() => setCurrentView('LOGIN')} className="hover:underline decoration-1 underline-offset-4">Login / Join</button>
+                <button 
+                  onClick={() => setCurrentView('LOGIN')} 
+                  className="hover:underline decoration-1 underline-offset-4"
+                >
+                  Login / Sign Up
+                </button>
              )}
           </div>
 
@@ -54,17 +80,18 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, setCurrentView, 
         </button>
         
         <nav className="flex flex-col gap-6">
-           <NavPacket label="01 / Index" onClick={() => {setCurrentView('HOME'); setIsMenuOpen(false)}} />
+           <NavPacket label="01 / Home" onClick={() => {setCurrentView('HOME'); setIsMenuOpen(false)}} />
+           
            {currentUser ? (
              <>
-               <NavPacket label="02 / Post Ad" onClick={() => {setCurrentView('CREATE_LISTING'); setIsMenuOpen(false)}} />
-               <NavPacket label="03 / Dashboard" onClick={() => {setCurrentView('DASHBOARD'); setIsMenuOpen(false)}} />
+               <NavPacket label="02 / Dashboard" onClick={() => {setCurrentView('DASHBOARD'); setIsMenuOpen(false)}} />
+               <NavPacket label="03 / Create Listing" onClick={() => {setCurrentView('CREATE_LISTING'); setIsMenuOpen(false)}} />
                <NavPacket label="04 / Logout" onClick={() => {onLogout(); setIsMenuOpen(false)}} />
              </>
            ) : (
              <>
                <NavPacket label="02 / Login" onClick={() => {setCurrentView('LOGIN'); setIsMenuOpen(false)}} />
-               <NavPacket label="03 / Register" onClick={() => {setCurrentView('REGISTER'); setIsMenuOpen(false)}} />
+               <NavPacket label="03 / Sign Up" onClick={() => {setCurrentView('REGISTER'); setIsMenuOpen(false)}} />
              </>
            )}
         </nav>
@@ -82,7 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, setCurrentView, 
           <div className="flex flex-col gap-4 font-mono text-xs text-secondary uppercase tracking-widest">
             <span>Tirana, Albania</span>
             <span>Est. 2024</span>
-            <span>System v1.0.4</span>
+            <span>System v1.0.5</span>
           </div>
           <div className="flex flex-col gap-4 font-mono text-xs text-secondary uppercase tracking-widest text-right">
              <a href="#" className="hover:text-white">Legal</a>
