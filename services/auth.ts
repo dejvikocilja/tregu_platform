@@ -12,7 +12,7 @@ export const signUpWithEmail = async (email: string, password: string, name: str
       data: {
         name: name,
       },
-      emailRedirectTo: `${window.location.origin}/auth/confirm`
+      emailRedirectTo: 'https://tregu-platform.vercel.app'
     }
   });
 
@@ -23,10 +23,6 @@ export const signUpWithEmail = async (email: string, password: string, name: str
     throw error;
   }
 
-  // Note: With email confirmation enabled, the user won't be logged in yet
-  // They need to click the link in their email first
-  
-  // We still create the profile, but it won't be accessible until email is confirmed
   if (data.user) {
     console.log('🔵 Creating user profile for user:', data.user.id);
     
@@ -37,13 +33,12 @@ export const signUpWithEmail = async (email: string, password: string, name: str
         name: name,
         free_listing_used: false,
         listing_count: 0,
-        is_verified: false, // Will be set to true after email confirmation
+        is_verified: false,
         role: 'user'
       } as any);
       console.log('✅ User profile created successfully');
     } catch (profileError) {
       console.error('❌ Error creating profile:', profileError);
-      // Don't throw here - the auth user was created successfully
       console.log('⚠️ Profile creation failed, but user can still verify email');
     }
   }
@@ -74,10 +69,7 @@ export const signInWithEmail = async (email: string, password: string) => {
 export const signInWithGoogle = async () => {
   console.log('🔵 signInWithGoogle called');
   
-  // Force production URL, never localhost
-  const redirectUrl = window.location.hostname === 'localhost' 
-    ? 'https://tregu-platform.vercel.app'
-    : window.location.origin;
+  const redirectUrl = 'https://tregu-platform.vercel.app';
   
   console.log('🔵 Redirect URL:', redirectUrl);
   
