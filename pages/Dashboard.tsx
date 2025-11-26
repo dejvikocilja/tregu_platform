@@ -124,11 +124,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
       {/* Listings */}
       {myListings.length === 0 ? (
           <div className="py-20 text-center border border-dashed border-border">
-              <p className="font-mono text-secondary uppercase mb-4">No Active Signals</p>
-              <p className="text-sm text-secondary mb-6">You haven't created any listings yet.</p>
-              <Button onClick={() => window.location.href = '#create'}>
-                  Create Your First Listing
-              </Button>
+              <div className="mb-4">
+                  <div className="w-20 h-20 mx-auto mb-4 border border-border flex items-center justify-center text-4xl text-secondary">
+                      📦
+                  </div>
+                  <p className="font-mono text-secondary uppercase mb-2 text-sm">No Active Listings</p>
+                  <p className="text-sm text-secondary/70 max-w-md mx-auto">
+                      You haven't created any listings yet. Use the "Create Listing" button in the navigation menu to post your first ad.
+                  </p>
+              </div>
           </div>
       ) : (
           <div className="grid grid-cols-1 gap-8">
