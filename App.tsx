@@ -28,16 +28,47 @@ const App = () => {
     }, 3000);
 
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
-      console.log('🔵 Auth event:', event, 'Session:', !!session);
-      
-      if (!mounted) return;
+  console.log('🔵 Auth event:', event, 'Session:', !!session);
+  
+  if (!mounted) return;
 
-      if (session?.user) {
+  if (session?.user) {
+    try {
+      console.log('🔵 Loading profile for user:', session.user.id);
+      const profile = await getUserProfile(session.user.id);
+      console.log('✅ Profile loaded:', profile);
+      
+      if (mounted) {
+        setCurrentUser({
+          id: profile.id,
+          email: profile.email,
+          name: profile.name || 'User',
+          joinedDate: profile.created_at,
+          listingCount: profile.listing_count,
+          isVerified: profile.is_verified,
+          role: profile.role
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error loading user profile:', error);
+      
+      // If profile doesn't exist but user is authenticated, create it
+      if (session.user.email) {
+        console.log('⚠️ Profile not found, creating one...');
         try {
-          console.log('🔵 Loading profile for user:', session.user.id);
-          const profile = await getUserProfile(session.user.id);
-          console.log('✅ Profile loaded:', profile);
+          const { upsertUserProfile } = await import('./services/database');
+          await upsertUserProfile(session.user.id, {
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.name || 'User',
+            free_listing_used: false,
+            listing_count: 0,
+            is_verified: !!session.user.email_confirmed_at,
+            role: 'user'
+          });
           
+          // Try loading profile again
+          const profile = await getUserProfile(session.user.id);
           if (mounted) {
             setCurrentUser({
               id: profile.id,
@@ -49,20 +80,22 @@ const App = () => {
               role: profile.role
             });
           }
-        } catch (error) {
-          console.error('❌ Error loading user profile:', error);
-        }
-      } else {
-        if (mounted) {
-          setCurrentUser(null);
+        } catch (createError) {
+          console.error('❌ Failed to create profile:', createError);
         }
       }
-      
-      if (mounted) {
-        clearTimeout(timeout);
-        setIsLoadingAuth(false);
-      }
-    });
+    }
+  } else {
+    if (mounted) {
+      setCurrentUser(null);
+    }
+  }
+  
+  if (mounted) {
+    clearTimeout(timeout);
+    setIsLoadingAuth(false);
+  }
+});
 
     return () => {
       mounted = false;
