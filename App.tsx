@@ -18,17 +18,15 @@ const App = () => {
   useEffect(() => {
     let mounted = true;
 
-    const timeout = setTimeout(() => {
-      if (mounted) {
-        setIsLoadingAuth(false);
-      }
-    }, 3000);
-
+    // Start auth state listener
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
+      console.log('🔐 Auth state changed:', event, session?.user?.id);
+
       if (session?.user) {
         try {
+          console.log('👤 Fetching user profile...');
           const profile = await getUserProfile(session.user.id);
           
           if (mounted) {
@@ -41,8 +39,10 @@ const App = () => {
               isVerified: profile.is_verified,
               role: profile.role
             });
+            console.log('✅ User profile loaded');
           }
         } catch (error) {
+          console.log('📝 Profile not found, creating new profile...');
           // Profile doesn't exist, create it
           if (session.user.email) {
             try {
@@ -67,27 +67,28 @@ const App = () => {
                   isVerified: profile.is_verified,
                   role: profile.role
                 });
+                console.log('✅ New user profile created');
               }
             } catch (createError) {
-              console.error('Failed to create profile:', createError);
+              console.error('❌ Failed to create profile:', createError);
             }
           }
         }
       } else {
+        console.log('👋 User logged out');
         if (mounted) {
           setCurrentUser(null);
         }
       }
       
+      // Auth check complete
       if (mounted) {
-        clearTimeout(timeout);
         setIsLoadingAuth(false);
       }
     });
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -107,12 +108,13 @@ const App = () => {
     }
   };
 
+  // Show auth loading ONLY during initial check
   if (isLoadingAuth) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="font-mono text-xs text-secondary uppercase tracking-widest">Loading...</p>
+          <p className="font-mono text-xs text-secondary uppercase tracking-widest">Authenticating...</p>
         </div>
       </div>
     );
