@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 
-// Get all active listings
 export const getListings = async () => {
   const { data, error } = await supabase
     .from('listings')
@@ -17,7 +16,6 @@ export const getListings = async () => {
   return data || [];
 };
 
-// Get a single listing
 export const getListing = async (listingId: string) => {
   const { data, error } = await supabase
     .from('listings')
@@ -33,7 +31,6 @@ export const getListing = async (listingId: string) => {
   return data;
 };
 
-// Get user's listings
 export const getUserListings = async (userId: string) => {
   const { data, error } = await supabase
     .from('listings')
@@ -48,7 +45,6 @@ export const getUserListings = async (userId: string) => {
   return data || [];
 };
 
-// Create listing
 export const createListing = async (listing: any) => {
   const { data, error } = await supabase
     .from('listings')
@@ -60,7 +56,6 @@ export const createListing = async (listing: any) => {
   return data;
 };
 
-// Update listing
 export const updateListing = async (listingId: string, updates: any) => {
   const { data, error } = await supabase
     .from('listings')
@@ -76,7 +71,6 @@ export const updateListing = async (listingId: string, updates: any) => {
   return data;
 };
 
-// Delete listing
 export const deleteListing = async (listingId: string) => {
   const { error } = await supabase
     .from('listings')
@@ -86,7 +80,6 @@ export const deleteListing = async (listingId: string) => {
   if (error) throw error;
 };
 
-// Increment views
 export const incrementViews = async (listingId: string) => {
   const { error } = await supabase.rpc('increment_views', {
     listing_id: listingId
@@ -95,7 +88,6 @@ export const incrementViews = async (listingId: string) => {
   if (error) console.error('Error incrementing views:', error);
 };
 
-// Increment contact clicks
 export const incrementContactClicks = async (listingId: string) => {
   const { error } = await supabase.rpc('increment_contact_clicks', {
     listing_id: listingId
@@ -104,7 +96,6 @@ export const incrementContactClicks = async (listingId: string) => {
   if (error) console.error('Error incrementing contact clicks:', error);
 };
 
-// Get categories
 export const getCategories = async () => {
   const { data, error } = await supabase
     .from('categories')
@@ -114,7 +105,7 @@ export const getCategories = async () => {
   if (error) throw error;
   return data || [];
 };
-// Get user profile
+
 export const getUserProfile = async (userId: string) => {
   const { data, error } = await supabase
     .from('users')
@@ -126,10 +117,7 @@ export const getUserProfile = async (userId: string) => {
   return data;
 };
 
-// Create or update user profile
 export const upsertUserProfile = async (userId: string, profile: any) => {
-  console.log('🔵 upsertUserProfile called with:', { userId, profile });
-  
   const { data, error } = await supabase
     .from('users')
     .upsert({
@@ -148,12 +136,6 @@ export const upsertUserProfile = async (userId: string, profile: any) => {
     .select()
     .single();
   
-  console.log('🔵 Upsert result:', { data, error });
-  
-  if (error) {
-    console.error('❌ Error upserting profile:', error);
-    throw error;
-  }
-  
+  if (error) throw error;
   return data;
 };
