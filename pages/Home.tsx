@@ -83,15 +83,25 @@ useEffect(() => {
   // Load listings from Supabase
   const loadListings = async () => {
     try {
+      console.log('🏠 Home: Loading listings from Supabase...');
       const { getListings: getSupabaseListings } = await import('../services/database');
       const data = await getSupabaseListings();
-      console.log('✅ Loaded listings from Supabase:', data.length);
+      console.log(`✅ Home: Loaded ${data.length} listings from Supabase`);
+      
+      if (data.length === 0) {
+        console.warn('⚠️ No listings found in database. Database might be empty.');
+      }
+      
       setListings(data);
     } catch (error) {
-      console.error('❌ Error loading listings:', error);
-      // Fallback to localStorage
+      console.error('❌ Home: Error loading listings from Supabase:', error);
+      
+      // Fallback to localStorage for development
+      console.log('🔄 Falling back to localStorage...');
       const { getListings: getLocalListings } = await import('../services/storage');
-      setListings(getLocalListings());
+      const localData = getLocalListings();
+      console.log(`📦 Loaded ${localData.length} listings from localStorage`);
+      setListings(localData);
     }
   };
   
