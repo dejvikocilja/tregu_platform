@@ -84,7 +84,7 @@ const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
         onClick={onClose}
       />
 
-      {/* Filter Panel - EVEN HIGHER */}
+      {/* Filter Panel */}
       <div className="fixed right-0 top-0 bottom-0 w-full md:w-[500px] bg-surface border-l border-border z-[80] overflow-y-auto transform transition-transform duration-500 ease-out">
         
         {/* Header */}
