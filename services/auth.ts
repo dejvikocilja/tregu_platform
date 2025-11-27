@@ -1,76 +1,112 @@
 import { supabase } from './supabase';
 import { upsertUserProfile } from './database';
 
-export const signUpWithEmail = async (email: string, password: string, name: string) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name: name,
-      },
-      emailRedirectTo: 'https://tregu-platform.vercel.app'
-    }
-  });
-
-  if (error) throw error;
-
-  if (data.user) {
-    try {
-      await upsertUserProfile(data.user.id, {
-        id: data.user.id,
-        email: email,
-        name: name,
-        free_listing_used: false,
-        listing_count: 0,
-        is_verified: false,
-        role: 'user'
-      } as any);
-    } catch (profileError) {
-      console.error('Error creating profile:', profileError);
-    }
+// Get current origin dynamically
+const getRedirectUrl = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
   }
+  return 'https://tregu-platform.vercel.app';
+};
 
-  return data;
+export const signUpWithEmail = async (email: string, password: string, name: string) => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name,
+        },
+        emailRedirectTo: getRedirectUrl()
+      }
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      try {
+        await upsertUserProfile(data.user.id, {
+          id: data.user.id,
+          email: email,
+          name: name,
+          free_listing_used: false,
+          listing_count: 0,
+          is_verified: false,
+          role: 'user'
+        } as any);
+      } catch (profileError) {
+        console.error('Error creating profile:', profileError);
+      }
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Sign up error:', error);
+    throw error;
+  }
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Sign in error:', error);
+    throw error;
+  }
 };
 
 export const signInWithGoogle = async () => {
-  const redirectUrl = 'https://tregu-platform.vercel.app';
-  
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: redirectUrl,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
+  try {
+    const redirectUrl = getRedirectUrl();
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
-    }
-  });
+    });
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Google sign in error:', error);
+    throw error;
+  }
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (error: any) {
+    console.error('Sign out error:', error);
+    throw error;
+  }
 };
 
 export const getCurrentSession = async () => {
-  const { data: { session }, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  return session;
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Get session error:', error);
+      return null;
+    }
+    return session;
+  } catch (error) {
+    console.error('Get session error:', error);
+    return null;
+  }
 };
 
 export const onAuthStateChange = (callback: (event: string, session: any) => void) => {
