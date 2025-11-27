@@ -78,14 +78,14 @@ const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
 
   return (
     <>
-      {/* Backdrop - HIGHEST Z-INDEX */}
+      {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998] transition-opacity duration-300"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] transition-opacity duration-300"
         onClick={onClose}
       />
 
       {/* Filter Panel - EVEN HIGHER */}
-      <div className="fixed right-0 top-0 bottom-0 w-full md:w-[500px] bg-surface border-l border-border z-[9999] overflow-y-auto transform transition-transform duration-500 ease-out">
+      <div className="fixed right-0 top-0 bottom-0 w-full md:w-[500px] bg-surface border-l border-border z-[80] overflow-y-auto transform transition-transform duration-500 ease-out">
         
         {/* Header */}
         <div className="sticky top-0 bg-surface border-b border-border p-6 flex items-center justify-between z-10">
