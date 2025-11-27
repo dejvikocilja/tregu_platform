@@ -1,12 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Change: Use process.env and the correct NEXT_PUBLIC_ prefix
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  // Update: Reflect the correct variable names in the error
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY! Check your Vercel environment variables');
+  throw new Error('Missing Supabase credentials! Check your Vercel environment variables');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
