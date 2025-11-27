@@ -1,20 +1,35 @@
 import { supabase } from './supabase';
 import { Listing, Category, ListingType } from '../types';
 
-// ============================================
-// LISTINGS
-// ============================================
+// Retry helper
+const retryOperation = async <T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  delay = 1000
+): Promise<T> => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      console.warn(`Retry ${i + 1}/${maxRetries} after error:`, error);
+      await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+    }
+  }
+  throw new Error('Max retries exceeded');
+};
 
 export const getListings = async () => {
   console.log('🔍 Fetching listings from Supabase...');
   
-  try {
+  return retryOperation(async () => {
     const { data, error } = await supabase
       .from('listings')
       .select('*')
       .eq('status', 'active')
       .order('is_boosted', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
     
     if (error) {
       console.error('❌ Error fetching listings:', error);
@@ -23,7 +38,6 @@ export const getListings = async () => {
     
     console.log(`✅ Successfully fetched ${data?.length || 0} listings`);
     
-    // Transform data to match frontend Listing type
     const transformedData = (data || []).map(listing => ({
       id: listing.id,
       userId: listing.user_id,
@@ -42,53 +56,23 @@ export const getListings = async () => {
     }));
     
     return transformedData;
-  } catch (error) {
-    console.error('❌ Fatal error in getListings:', error);
-    return [];
-  }
-};
-
-export const getListing = async (listingId: string) => {
-  console.log(`🔍 Fetching listing ${listingId}...`);
-  
-  try {
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('id', listingId)
-      .single();
-    
-    if (error) {
-      console.error('❌ Error fetching listing:', error);
-      throw error;
-    }
-    
-    console.log('✅ Successfully fetched listing');
-    return data;
-  } catch (error) {
-    console.error('❌ Fatal error in getListing:', error);
-    throw error;
-  }
+  });
 };
 
 export const getUserListings = async (userId: string) => {
   console.log(`🔍 Fetching listings for user ${userId}...`);
   
-  try {
+  return retryOperation(async () => {
     const { data, error } = await supabase
       .from('listings')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
-    if (error) {
-      console.error('❌ Error fetching user listings:', error);
-      throw error;
-    }
+    if (error) throw error;
     
     console.log(`✅ Successfully fetched ${data?.length || 0} user listings`);
     
-    // Transform data to match frontend Listing type
     const transformedData = (data || []).map(listing => ({
       id: listing.id,
       userId: listing.user_id,
@@ -107,10 +91,7 @@ export const getUserListings = async (userId: string) => {
     }));
     
     return transformedData;
-  } catch (error) {
-    console.error('❌ Fatal error in getUserListings:', error);
-    return [];
-  }
+  });
 };
 
 export const createListing = async (listingData: {
@@ -124,9 +105,9 @@ export const createListing = async (listingData: {
   images: string[];
   is_boosted?: boolean;
 }) => {
-  console.log('📝 Creating new listing...', listingData);
+  console.log('📝 Creating new listing...');
   
-  try {
+  return retryOperation(async () => {
     const { data, error } = await supabase
       .from('listings')
       .insert({
@@ -141,134 +122,53 @@ export const createListing = async (listingData: {
         is_boosted: listingData.is_boosted || false,
         status: 'active',
         views: 0,
-        contact_clicks: 0,
-        created_at: new Date().toISOString()
+        contact_clicks: 0
       })
       .select()
       .single();
     
-    if (error) {
-      console.error('❌ Error creating listing:', error);
-      throw error;
-    }
+    if (error) throw error;
     
     console.log('✅ Successfully created listing:', data.id);
-    
-    // Update user's listing count
     await incrementUserListingCount(listingData.user_id);
-    
     return data;
-  } catch (error) {
-    console.error('❌ Fatal error in createListing:', error);
-    throw error;
-  }
-};
-
-export const updateListing = async (listingId: string, updates: any) => {
-  console.log(`📝 Updating listing ${listingId}...`);
-  
-  try {
-    const { data, error } = await supabase
-      .from('listings')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', listingId)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('❌ Error updating listing:', error);
-      throw error;
-    }
-    
-    console.log('✅ Successfully updated listing');
-    return data;
-  } catch (error) {
-    console.error('❌ Fatal error in updateListing:', error);
-    throw error;
-  }
+  });
 };
 
 export const deleteListing = async (listingId: string) => {
   console.log(`🗑️ Deleting listing ${listingId}...`);
   
-  try {
+  return retryOperation(async () => {
     const { error } = await supabase
       .from('listings')
       .delete()
       .eq('id', listingId);
     
-    if (error) {
-      console.error('❌ Error deleting listing:', error);
-      throw error;
-    }
-    
+    if (error) throw error;
     console.log('✅ Successfully deleted listing');
-  } catch (error) {
-    console.error('❌ Fatal error in deleteListing:', error);
-    throw error;
-  }
+  });
 };
-
-export const incrementViews = async (listingId: string) => {
-  try {
-    const { error } = await supabase
-      .from('listings')
-      .update({ views: supabase.raw('views + 1') })
-      .eq('id', listingId);
-    
-    if (error) console.error('Error incrementing views:', error);
-  } catch (error) {
-    console.error('Fatal error incrementing views:', error);
-  }
-};
-
-export const incrementContactClicks = async (listingId: string) => {
-  try {
-    const { error } = await supabase
-      .from('listings')
-      .update({ contact_clicks: supabase.raw('contact_clicks + 1') })
-      .eq('id', listingId);
-    
-    if (error) console.error('Error incrementing contact clicks:', error);
-  } catch (error) {
-    console.error('Fatal error incrementing contact clicks:', error);
-  }
-};
-
-// ============================================
-// USERS
-// ============================================
 
 export const getUserProfile = async (userId: string) => {
   console.log(`🔍 Fetching user profile ${userId}...`);
   
-  try {
+  return retryOperation(async () => {
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .single();
     
-    if (error) {
-      console.error('❌ Error fetching user profile:', error);
-      throw error;
-    }
-    
+    if (error) throw error;
     console.log('✅ Successfully fetched user profile');
     return data;
-  } catch (error) {
-    console.error('❌ Fatal error in getUserProfile:', error);
-    throw error;
-  }
+  });
 };
 
 export const upsertUserProfile = async (userId: string, profile: any) => {
   console.log(`📝 Upserting user profile ${userId}...`);
   
-  try {
+  return retryOperation(async () => {
     const { data, error } = await supabase
       .from('users')
       .upsert({
@@ -287,52 +187,16 @@ export const upsertUserProfile = async (userId: string, profile: any) => {
       .select()
       .single();
     
-    if (error) {
-      console.error('❌ Error upserting user profile:', error);
-      throw error;
-    }
-    
+    if (error) throw error;
     console.log('✅ Successfully upserted user profile');
     return data;
-  } catch (error) {
-    console.error('❌ Fatal error in upsertUserProfile:', error);
-    throw error;
-  }
+  });
 };
 
 const incrementUserListingCount = async (userId: string) => {
   try {
-    const { error } = await supabase
-      .from('users')
-      .update({ 
-        listing_count: supabase.raw('listing_count + 1'),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-    
-    if (error) {
-      console.error('Error incrementing user listing count:', error);
-    }
+    await supabase.rpc('increment_user_listing_count', { user_id: userId });
   } catch (error) {
-    console.error('Fatal error incrementing listing count:', error);
-  }
-};
-
-// ============================================
-// CATEGORIES (for future use)
-// ============================================
-
-export const getCategories = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('display_order', { ascending: true });
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
+    console.error('Error incrementing listing count:', error);
   }
 };
