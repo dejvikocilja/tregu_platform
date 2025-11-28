@@ -277,7 +277,7 @@ useEffect(() => {
             playsInline
             preload="auto"
             className="absolute inset-0 w-full h-full object-cover opacity-70"
-            src="https://youtu.be/4J-mhsLwUDQ?si=ifuMQgcam6Uy1v8m"
+            src="bazaar.mp4"
           />
           
           <div className="absolute inset-0 bg-black/40" />
