@@ -157,15 +157,5 @@ const App = () => {
     </Layout>
   );
 };
-useEffect(() => {
-  if (import.meta.env.DEV) {
-    console.log('🔍 Environment Debug:', {
-      supabaseUrl: import.meta.env.VITE_SUPABASE_URL ? '✅ Set' : '❌ Missing',
-      supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing',
-      geminiKey: import.meta.env.VITE_GEMINI_API_KEY ? '✅ Set' : '⚠️ Missing (optional)',
-      appUrl: import.meta.env.VITE_APP_URL || 'Auto-detected'
-    });
-  }
-}, []);
 
 export default App;
