@@ -1,93 +1,98 @@
+/**
+ * storage.ts - Pure Supabase implementation
+ * This file now delegates all operations to database.ts
+ * Keeping it for backwards compatibility with existing imports
+ */
+
+import { 
+  getListings as getSupabaseListings,
+  getUserListings as getSupabaseUserListings,
+  createListing as createSupabaseListing,
+  deleteListing as deleteSupabaseListing,
+  updateListingStats
+} from './database';
 import { Listing, User, ListingStats } from '../types';
-import { MOCK_LISTINGS, MOCK_USERS } from '../constants';
 
-const KEYS = {
-  USERS: 'tregu_users',
-  LISTINGS: 'tregu_listings',
-  CURRENT_USER: 'tregu_current_user',
+// Re-export database functions
+export const getListings = getSupabaseListings;
+export const getUserListings = getSupabaseUserListings;
+export const saveListing = createSupabaseListing;
+export const deleteListing = deleteSupabaseListing;
+
+/**
+ * @deprecated Use database.ts functions directly
+ * Keeping for backwards compatibility
+ */
+export const updateListing = async (listing: Listing) => {
+  console.warn('⚠️ updateListing from storage.ts is deprecated. Use database.ts instead.');
+  await updateListingStats(listing.id, {
+    views: listing.views,
+    contact_clicks: listing.contactClicks
+  });
 };
 
-// Initialize
-if (!localStorage.getItem(KEYS.LISTINGS)) {
-  localStorage.setItem(KEYS.LISTINGS, JSON.stringify(MOCK_LISTINGS));
-}
-if (!localStorage.getItem(KEYS.USERS)) {
-  localStorage.setItem(KEYS.USERS, JSON.stringify(MOCK_USERS));
-}
-
-export const getListings = (): Listing[] => {
-  const data = localStorage.getItem(KEYS.LISTINGS);
-  return data ? JSON.parse(data) : [];
-};
-
-export const getUsers = (): User[] => {
-    const data = localStorage.getItem(KEYS.USERS);
-    return data ? JSON.parse(data) : [];
-};
-
-export const saveListing = (listing: Listing) => {
-  const listings = getListings();
-  listings.unshift(listing); // Add to top
-  localStorage.setItem(KEYS.LISTINGS, JSON.stringify(listings));
-};
-
-export const updateListing = (listing: Listing) => {
-    const listings = getListings();
-    const index = listings.findIndex(l => l.id === listing.id);
-    if (index !== -1) {
-        listings[index] = listing;
-        localStorage.setItem(KEYS.LISTINGS, JSON.stringify(listings));
-    }
-}
-
-export const deleteListing = (id: string) => {
-    const listings = getListings().filter(l => l.id !== id);
-    localStorage.setItem(KEYS.LISTINGS, JSON.stringify(listings));
-}
-
-export const saveUser = (user: User) => {
-  const users = getUsers();
-  users.push(user);
-  localStorage.setItem(KEYS.USERS, JSON.stringify(users));
-};
-
-export const getCurrentUser = (): User | null => {
-  const data = localStorage.getItem(KEYS.CURRENT_USER);
-  return data ? JSON.parse(data) : null;
-};
-
-export const loginUserMock = (email: string): User | null => {
-  const users = getUsers();
-  const user = users.find((u) => u.email === email);
-  if (user) {
-    localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
-    return user;
+/**
+ * Generate mock stats for dashboard
+ * TODO: Implement real analytics in Supabase
+ */
+export const getListingStats = (listingId: string): ListingStats => {
+  const days = 7;
+  const history = [];
+  
+  for (let i = 0; i < days; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - (days - i));
+    history.push({
+      date: d.toLocaleDateString('sq-AL', { weekday: 'short' }),
+      views: Math.floor(Math.random() * 50) + 5
+    });
   }
+  
+  return {
+    listingId,
+    viewsHistory: history,
+    avgCategoryPosition: Math.floor(Math.random() * 10) + 1,
+    impressionCount: Math.floor(Math.random() * 5000) + 500
+  };
+};
+
+// Remove all localStorage-based functions
+// These are no longer needed with pure Supabase
+
+/**
+ * @deprecated No longer using localStorage
+ */
+export const getUsers = (): User[] => {
+  console.warn('⚠️ getUsers from localStorage is deprecated. Use database.ts getUserProfile instead.');
+  return [];
+};
+
+/**
+ * @deprecated No longer using localStorage
+ */
+export const saveUser = (user: User) => {
+  console.warn('⚠️ saveUser to localStorage is deprecated. Use database.ts upsertUserProfile instead.');
+};
+
+/**
+ * @deprecated No longer using localStorage for auth
+ */
+export const getCurrentUser = (): User | null => {
+  console.warn('⚠️ getCurrentUser from localStorage is deprecated. Use auth.ts getCurrentSession instead.');
   return null;
 };
 
-export const logoutUserMock = () => {
-  localStorage.removeItem(KEYS.CURRENT_USER);
+/**
+ * @deprecated No longer using localStorage for auth
+ */
+export const loginUserMock = (email: string): User | null => {
+  console.warn('⚠️ loginUserMock is deprecated. Use auth.ts signInWithEmail instead.');
+  return null;
 };
 
-// Generate random stats for the dashboard
-export const getListingStats = (listingId: string): ListingStats => {
-    // In a real app, this comes from DB aggregation
-    const days = 7;
-    const history = [];
-    for (let i = 0; i < days; i++) {
-        const d = new Date();
-        d.setDate(d.getDate() - (days - i));
-        history.push({
-            date: d.toLocaleDateString('sq-AL', { weekday: 'short' }),
-            views: Math.floor(Math.random() * 50) + 5
-        });
-    }
-    
-    return {
-        listingId,
-        viewsHistory: history,
-        avgCategoryPosition: Math.floor(Math.random() * 10) + 1,
-        impressionCount: Math.floor(Math.random() * 5000) + 500
-    };
-}
+/**
+ * @deprecated No longer using localStorage for auth
+ */
+export const logoutUserMock = () => {
+  console.warn('⚠️ logoutUserMock is deprecated. Use auth.ts signOut instead.');
+};
