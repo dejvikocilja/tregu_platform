@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Listing, User } from '../types';
-import { getListings, getUsers, updateListing } from '../services/storage';
+import { 
+  getListingById, 
+  getListings, 
+  incrementListingViews, 
+  incrementContactClicks,
+  getUserProfile 
+} from '../services/database';
+import { getListingStats } from '../services/storage'; // Still using mock stats
 import { Card, Button, Badge, SectionHeader } from '../components/DesignSystem';
 import { 
   MapPin, 
@@ -14,7 +21,8 @@ import {
   ChevronRight,
   AlertTriangle,
   User as UserIcon,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react';
 
 interface ListingDetailProps {
@@ -30,53 +38,92 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
   const [showContact, setShowContact] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Load listing
-    const listings = getListings();
-    const found = listings.find(l => l.id === listingId);
-    if (found) {
-      setListing(found);
-      
-      // Increment views
-      const updated = { ...found, views: found.views + 1 };
-      updateListing(updated);
-      
-      // Load seller info
-      const users = getUsers();
-      const sellerInfo = users.find(u => u.id === found.userId);
-      setSeller(sellerInfo || null);
-      
-      // Load related listings (same category, different listing)
-      const related = listings
-        .filter(l => l.category === found.category && l.id !== found.id && l.status === 'active')
-        .slice(0, 3);
-      setRelatedListings(related);
-    }
+    loadListingDetails();
   }, [listingId]);
 
-  if (!listing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="font-mono text-secondary uppercase text-sm">SIGNAL LOST</p>
-          <Button onClick={onBack} variant="outline" className="mt-4">Return</Button>
-        </div>
-      </div>
-    );
-  }
+  const loadListingDetails = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      console.log('🔍 Loading listing details...');
+      
+      // Load the listing
+      const found = await getListingById(listingId);
+      
+      if (!found) {
+        setError('Listing not found');
+        setIsLoading(false);
+        return;
+      }
+      
+      setListing(found);
+      
+      // Increment views (non-blocking)
+      incrementListingViews(listingId).catch(err => 
+        console.error('Failed to increment views:', err)
+      );
+      
+      // Load seller info
+      try {
+        const sellerInfo = await getUserProfile(found.userId);
+        setSeller({
+          id: sellerInfo.id,
+          email: sellerInfo.email,
+          name: sellerInfo.name || 'User',
+          joinedDate: sellerInfo.created_at,
+          listingCount: sellerInfo.listing_count,
+          isVerified: sellerInfo.is_verified,
+          role: sellerInfo.role
+        });
+      } catch (err) {
+        console.error('Failed to load seller info:', err);
+      }
+      
+      // Load related listings (same category, different listing)
+      try {
+        const allListings = await getListings();
+        const related = allListings
+          .filter(l => 
+            l.category === found.category && 
+            l.id !== found.id && 
+            l.status === 'active'
+          )
+          .slice(0, 3);
+        setRelatedListings(related);
+      } catch (err) {
+        console.error('Failed to load related listings:', err);
+      }
+      
+      setIsLoading(false);
+      
+    } catch (error: any) {
+      console.error('❌ Error loading listing details:', error);
+      setError(error.message || 'Failed to load listing details');
+      setIsLoading(false);
+    }
+  };
 
-  const handleContactClick = () => {
+  const handleContactClick = async () => {
     setShowContact(true);
-    const updated = { ...listing, contactClicks: listing.contactClicks + 1 };
-    updateListing(updated);
+    
+    // Increment contact clicks (non-blocking)
+    if (listing) {
+      incrementContactClicks(listing.id).catch(err =>
+        console.error('Failed to increment contact clicks:', err)
+      );
+    }
   };
 
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: listing.title,
-        text: listing.description,
+        title: listing?.title,
+        text: listing?.description,
         url: window.location.href,
       });
     } else {
@@ -87,12 +134,43 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
   };
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % listing.images.length);
+    if (listing) {
+      setCurrentImageIndex((prev) => (prev + 1) % listing.images.length);
+    }
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + listing.images.length) % listing.images.length);
+    if (listing) {
+      setCurrentImageIndex((prev) => (prev - 1 + listing.images.length) % listing.images.length);
+    }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background pt-32 pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin mx-auto mb-4 text-white" size={40} />
+          <p className="font-mono text-secondary uppercase text-sm">Loading Listing...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !listing) {
+    return (
+      <div className="min-h-screen bg-background pt-32 pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="mx-auto mb-4 text-red-500" size={48} />
+          <p className="font-mono text-secondary uppercase text-sm mb-6">
+            {error || 'SIGNAL LOST'}
+          </p>
+          <Button onClick={onBack} variant="outline">Return to Home</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pt-32 pb-20">
@@ -347,7 +425,11 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
                 <Card 
                   key={related.id}
                   className="p-0 cursor-pointer group overflow-hidden"
-                  onClick={() => window.scrollTo(0, 0)}
+                  onClick={() => {
+                    // Reload with new listing ID
+                    window.scrollTo(0, 0);
+                    // This will trigger the parent to change listingId
+                  }}
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-surfaceHighlight">
                     <img 
