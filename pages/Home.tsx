@@ -95,13 +95,7 @@ useEffect(() => {
       setListings(data);
     } catch (error) {
       console.error('❌ Home: Error loading listings from Supabase:', error);
-      
-      // Fallback to localStorage for development
-      console.log('🔄 Falling back to localStorage...');
-      const { getListings: getLocalListings } = await import('../services/storage');
-      const localData = getLocalListings();
-      console.log(`📦 Loaded ${localData.length} listings from localStorage`);
-      setListings(localData);
+    
     }
   };
   
