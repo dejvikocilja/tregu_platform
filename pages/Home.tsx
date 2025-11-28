@@ -277,7 +277,7 @@ useEffect(() => {
             playsInline
             preload="auto"
             className="absolute inset-0 w-full h-full object-cover opacity-70"
-            src="/tregu_platform/bazaar.mp4"
+            src="/bazaar.mp4"
           />
           
           <div className="absolute inset-0 bg-black/40" />
