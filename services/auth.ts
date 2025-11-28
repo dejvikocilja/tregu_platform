@@ -3,11 +3,8 @@ import { upsertUserProfile } from './database';
 
 // Get current origin dynamically
 const getRedirectUrl = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
-  }
-  return 'https://tregu-platform.vercel.app';
-};
+     return import.meta.env.VITE_APP_URL || 'https://tregu-platform.vercel.app';
+   };
 
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
   try {
