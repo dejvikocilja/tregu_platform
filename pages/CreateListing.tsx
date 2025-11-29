@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Category, User, ListingType } from '../types';
-import { CATEGORIES } from '../constants';
-import { generateDescription, checkSpam } from '../services/geminiService';
-import { createListing } from '../services/database';
-import { Loader2, AlertCircle, Check } from 'lucide-react';
-import { Button, Input, Select, Card, SectionHeader } from '../components/DesignSystem';
 import { CATEGORIES, ALBANIAN_CITIES } from '../constants';
+import { checkSpam } from '../services/geminiService';
+import { createListing } from '../services/database';
+import { uploadImage, validateImageFile } from '../services/imageUpload';
+import { Loader2, AlertCircle, Check } from 'lucide-react';
+import { Button, Select, Card, SectionHeader } from '../components/DesignSystem';
 
 interface CreateListingProps {
   currentUser: User;
@@ -27,6 +27,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
     location: '',
     description: '',
     images: [] as string[],
+    imageFiles: [] as File[],
   });
 
   const [selectedPlan, setSelectedPlan] = useState<ListingType>(ListingType.STANDARD);
@@ -34,25 +35,34 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(''); // Clear error on change
+    setError('');
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
-        const url = URL.createObjectURL(file);
-        setFormData(prev => ({ ...prev, images: [...prev.images, url] }));
+        
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+          setError(validation.error || 'Invalid image');
+          return;
+        }
+        
+        const previewUrl = URL.createObjectURL(file);
+        setFormData(prev => ({ 
+          ...prev, 
+          images: [...prev.images, previewUrl],
+          imageFiles: [...prev.imageFiles, file]
+        }));
+        setError('');
     }
   };
-
-  
 
   const handleSubmitStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     
-    // Validation
     if(!formData.title.trim()) {
         setError('Title is required.');
         return;
@@ -73,7 +83,6 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
         return;
     }
 
-    // Check for spam
     try {
       const isSpam = await checkSpam(formData.description + " " + formData.title);
       if (isSpam) {
@@ -84,7 +93,6 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
       console.warn('Spam check failed, proceeding anyway');
     }
 
-    // If first listing is free, skip payment
     if (isFree) {
         finishCreation(ListingType.STANDARD);
     } else {
@@ -98,9 +106,18 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
       setSuccess('');
       
       try {
-          console.log('🚀 Creating listing in Supabase...');
+          let uploadedImageUrls: string[] = [];
           
-          // Create listing in Supabase
+          if (formData.imageFiles.length > 0) {
+            setSuccess('📤 Uploading images...');
+            for (const file of formData.imageFiles) {
+              const url = await uploadImage(file);
+              uploadedImageUrls.push(url);
+            }
+          }
+          
+          setSuccess('📝 Creating listing...');
+          
           const newListing = await createListing({
               user_id: currentUser.id,
               title: formData.title.trim(),
@@ -109,29 +126,26 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
               currency: formData.currency as 'LEK' | 'EUR',
               category: formData.category,
               location: formData.location.trim(),
-              images: formData.images.length > 0 ? formData.images : ['https://picsum.photos/600/400'],
+              images: uploadedImageUrls.length > 0 ? uploadedImageUrls : ['https://picsum.photos/600/400'],
               is_boosted: type === ListingType.FEATURED
           });
 
-          console.log('✅ Listing created successfully:', newListing.id);
-
-          // Update local user state
           const updatedUser = { 
             ...currentUser, 
             listingCount: currentUser.listingCount + 1 
           };
           onUpdateUser(updatedUser);
           
-          setSuccess('✅ Listing created successfully!');
+          formData.images.forEach(url => {
+            if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+          });
           
-          // Redirect to dashboard after short delay
-          setTimeout(() => {
-            onSuccess();
-          }, 1500);
+          setSuccess('✅ Listing created successfully!');
+          setTimeout(() => onSuccess(), 1500);
           
       } catch (err: any) {
-          console.error('❌ Failed to create listing:', err);
-          setError(err.message || 'Failed to create listing. Please try again.');
+          console.error('❌ Failed:', err);
+          setError(err.message || 'Failed to create listing.');
           setIsProcessing(false);
       }
   };
@@ -230,13 +244,14 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
                     <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
                       Title *
                     </label>
-                    <Input 
+                    <input 
                       name="title" 
                       value={formData.title} 
                       onChange={handleChange} 
                       placeholder="EX: VEHICLE MODEL X" 
                       required 
                       disabled={isProcessing}
+                      className="w-full bg-surface border-b border-border px-0 py-4 text-white placeholder-secondary focus:outline-none focus:border-white transition-colors duration-300 font-mono text-sm"
                     />
                 </div>
                 
@@ -259,7 +274,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
                          <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
                            Price *
                          </label>
-                         <Input 
+                         <input 
                            type="number" 
                            name="price" 
                            value={formData.price} 
@@ -269,6 +284,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
                            step="0.01"
                            required 
                            disabled={isProcessing}
+                           className="w-full bg-surface border-b border-border px-0 py-4 text-white placeholder-secondary focus:outline-none focus:border-white transition-colors duration-300 font-mono text-sm"
                          />
                     </div>
                      <div>
@@ -289,40 +305,39 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
             </div>
             
             <div className="space-y-8">
-                 <div>
-    <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
-      Location *
-    </label>
-    <Select 
-      name="location" 
-      value={formData.location} 
-      onChange={handleChange}
-      required 
-      disabled={isProcessing}
-    >
-        <option value="" className="bg-surface">Select City</option>
-        {ALBANIAN_CITIES.map(city => (
-          <option key={city} value={city} className="bg-surface">{city}</option>
-        ))}
-    </Select>
-</div>
+                <div>
+                    <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
+                      Location *
+                    </label>
+                    <Select 
+                      name="location" 
+                      value={formData.location} 
+                      onChange={handleChange}
+                      required 
+                      disabled={isProcessing}
+                    >
+                        <option value="" className="bg-surface">Select City</option>
+                        {ALBANIAN_CITIES.map(city => (
+                          <option key={city} value={city} className="bg-surface">{city}</option>
+                        ))}
+                    </Select>
+                </div>
                 
                 <div>
-                     <div>
-    <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
-      Description *
-    </label>
-    <textarea 
-        name="description"
-        value={formData.description}
-        onChange={handleChange}
-        rows={5}
-        className="w-full bg-surface border-b border-border px-0 py-2 text-white placeholder-secondary focus:outline-none focus:border-white transition-colors font-mono text-sm resize-none disabled:opacity-50"
-        placeholder="ENTER DETAILS..."
-        required
-        disabled={isProcessing}
-    />
-</div>
+                    <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
+                      Description *
+                    </label>
+                    <textarea 
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        rows={5}
+                        className="w-full bg-surface border-b border-border px-0 py-2 text-white placeholder-secondary focus:outline-none focus:border-white transition-colors font-mono text-sm resize-none disabled:opacity-50"
+                        placeholder="ENTER DETAILS..."
+                        required
+                        disabled={isProcessing}
+                    />
+                </div>
             </div>
         </div>
 
@@ -347,7 +362,18 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
                          <img src={img} className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition" alt={`preview ${idx + 1}`} />
                          <button
                            type="button"
-                           onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))}
+                           onClick={() => {
+                             const updatedImages = formData.images.filter((_, i) => i !== idx);
+                             const updatedFiles = formData.imageFiles.filter((_, i) => i !== idx);
+                             if (formData.images[idx].startsWith('blob:')) {
+                               URL.revokeObjectURL(formData.images[idx]);
+                             }
+                             setFormData(prev => ({ 
+                               ...prev, 
+                               images: updatedImages,
+                               imageFiles: updatedFiles
+                             }));
+                           }}
                            className="absolute top-2 right-2 bg-red-500 text-white p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                            disabled={isProcessing}
                          >
@@ -357,7 +383,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
                  ))}
              </div>
              <p className="mt-2 text-[10px] font-mono text-secondary">
-               Note: Image upload to cloud storage coming soon. Currently using temporary URLs.
+               Maximum 5 images, 5MB each. Supported: JPG, PNG, WebP
              </p>
         </div>
 
@@ -372,7 +398,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
               </Button>
               <Button 
                 type="submit" 
-                disabled={isLoadingAI || isProcessing}
+                disabled={isProcessing}
               >
                   {isProcessing ? (
                     <>
