@@ -3,8 +3,9 @@ import { Category, User, ListingType } from '../types';
 import { CATEGORIES } from '../constants';
 import { generateDescription, checkSpam } from '../services/geminiService';
 import { createListing } from '../services/database';
-import { Loader2, AlertCircle, Check, Sparkles } from 'lucide-react';
+import { Loader2, AlertCircle, Check } from 'lucide-react';
 import { Button, Input, Select, Card, SectionHeader } from '../components/DesignSystem';
+import { CATEGORIES, ALBANIAN_CITIES } from '../constants';
 
 interface CreateListingProps {
   currentUser: User;
@@ -14,7 +15,6 @@ interface CreateListingProps {
 
 const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, onUpdateUser }) => {
   const [step, setStep] = useState<1 | 2>(1);
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -45,27 +45,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
     }
   };
 
-  const handleGenerateDescription = async () => {
-    if (!formData.title || !formData.location) {
-      setError('Title and location are required for AI generation.');
-      return;
-    }
-    
-    setIsLoadingAI(true);
-    setError('');
-    setSuccess('');
-    
-    try {
-      const desc = await generateDescription(formData.title, formData.category as Category, formData.location);
-      setFormData(prev => ({ ...prev, description: desc }));
-      setSuccess('✨ Description generated successfully!');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError('Failed to generate description. Please try again.');
-    } finally {
-      setIsLoadingAI(false);
-    }
-  };
+  
 
   const handleSubmitStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,52 +290,39 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
             
             <div className="space-y-8">
                  <div>
-                     <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
-                       Location *
-                     </label>
-                     <Input 
-                       name="location" 
-                       value={formData.location} 
-                       onChange={handleChange} 
-                       placeholder="CITY, DISTRICT" 
-                       required 
-                       disabled={isProcessing}
-                     />
-                </div>
+    <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
+      Location *
+    </label>
+    <Select 
+      name="location" 
+      value={formData.location} 
+      onChange={handleChange}
+      required 
+      disabled={isProcessing}
+    >
+        <option value="" className="bg-surface">Select City</option>
+        {ALBANIAN_CITIES.map(city => (
+          <option key={city} value={city} className="bg-surface">{city}</option>
+        ))}
+    </Select>
+</div>
                 
                 <div>
-                     <div className="flex justify-between items-center mb-2">
-                        <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary">
-                          Description *
-                        </label>
-                        <button 
-                          type="button" 
-                          onClick={handleGenerateDescription} 
-                          disabled={isLoadingAI || isProcessing}
-                          className="text-[10px] uppercase font-mono text-accent hover:text-white flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoadingAI ? (
-                              <>
-                                <Loader2 size={10} className="animate-spin mr-1"/> Generating...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles size={10} className="mr-1"/> AI Generate
-                              </>
-                            )}
-                        </button>
-                     </div>
-                    <textarea 
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        rows={5}
-                        className="w-full bg-surface border-b border-border px-0 py-2 text-white placeholder-secondary focus:outline-none focus:border-white transition-colors font-mono text-sm resize-none disabled:opacity-50"
-                        placeholder="ENTER DETAILS..."
-                        required
-                        disabled={isProcessing}
-                    />
-                </div>
+                     <div>
+    <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
+      Description *
+    </label>
+    <textarea 
+        name="description"
+        value={formData.description}
+        onChange={handleChange}
+        rows={5}
+        className="w-full bg-surface border-b border-border px-0 py-2 text-white placeholder-secondary focus:outline-none focus:border-white transition-colors font-mono text-sm resize-none disabled:opacity-50"
+        placeholder="ENTER DETAILS..."
+        required
+        disabled={isProcessing}
+    />
+</div>
             </div>
         </div>
 
