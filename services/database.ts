@@ -114,6 +114,7 @@ export const createListing = async (listingData: {
   currency: string;
   category: string;
   location: string;
+  phone: string;
   images: string[];
   is_boosted?: boolean;
 }) => {
@@ -130,6 +131,7 @@ export const createListing = async (listingData: {
         currency: listingData.currency,
         category: listingData.category,
         location: listingData.location,
+        phone: listingData.phone,
         images: listingData.images,
         is_boosted: listingData.is_boosted || false,
         status: 'active',
@@ -263,6 +265,7 @@ export const updateListing = async (
     currency: string;
     category: string;
     location: string;
+    phone: string;
     images: string[];
     status: string;
   }>
@@ -412,6 +415,7 @@ const transformListings = (data: any[]): Listing[] => {
     currency: listing.currency as 'LEK' | 'EUR',
     category: listing.category as Category,
     location: listing.location,
+    phone: listing.phone,
     images: listing.images || [],
     createdAt: listing.created_at,
     type: listing.is_boosted ? ListingType.FEATURED : ListingType.STANDARD,
