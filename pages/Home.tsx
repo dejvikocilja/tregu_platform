@@ -271,7 +271,7 @@ useEffect(() => {
             playsInline
             preload="auto"
             className="absolute inset-0 w-full h-full object-cover opacity-70"
-            src="https://player.cloudinary.com/embed/?cloud_name=ddznqozmg&public_id=bazaar_wtf5dj&profile=bazaar"
+            src="https://res.cloudinary.com/ddznqozmg/video/upload/bazaar_wtf5dj.mp4"
           />
           
           <div className="absolute inset-0 bg-black/40" />
@@ -296,7 +296,7 @@ useEffect(() => {
                 Tregu
               </h1>
               <p className="font-mono text-sm md:text-base text-white/70 uppercase tracking-[0.3em]">
-                The Future of Commerce
+                E ardhmja e tregtise online
               </p>
             </div>
 
