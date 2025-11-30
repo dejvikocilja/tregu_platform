@@ -271,7 +271,7 @@ useEffect(() => {
             playsInline
             preload="auto"
             className="absolute inset-0 w-full h-full object-cover opacity-70"
-            src="/bazaar.mp4"
+            src="https://player.cloudinary.com/embed/?cloud_name=ddznqozmg&public_id=bazaar_wtf5dj&profile=cld-default"
           />
           
           <div className="absolute inset-0 bg-black/40" />
