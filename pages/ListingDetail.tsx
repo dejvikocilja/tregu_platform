@@ -3,11 +3,9 @@ import { Listing, User } from '../types';
 import { 
   getListingById, 
   getListings, 
-  incrementListingViews, 
-  incrementContactClicks,
+  incrementListingViews,
   getUserProfile 
 } from '../services/database';
-import { getListingStats } from '../services/storage'; // Still using mock stats
 import { Card, Button, Badge, SectionHeader } from '../components/DesignSystem';
 import { 
   MapPin, 
@@ -35,7 +33,6 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<User | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showContact, setShowContact] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,10 +47,11 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
     setError('');
     
     try {
-      console.log('🔍 Loading listing details...');
-      
-      // Load the listing
-      const found = await getListingById(listingId);
+      // Parallel loading instead of sequential
+      const [found, allListings] = await Promise.all([
+        getListingById(listingId),
+        getListings()
+      ]);
       
       if (!found) {
         setError('Listing not found');
@@ -63,41 +61,35 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
       
       setListing(found);
       
-      // Increment views (non-blocking)
+      // Non-blocking operations
       incrementListingViews(listingId).catch(err => 
         console.error('Failed to increment views:', err)
       );
       
-      // Load seller info
-      try {
-        const sellerInfo = await getUserProfile(found.userId);
-        setSeller({
-          id: sellerInfo.id,
-          email: sellerInfo.email,
-          name: sellerInfo.name || 'User',
-          joinedDate: sellerInfo.created_at,
-          listingCount: sellerInfo.listing_count,
-          isVerified: sellerInfo.is_verified,
-          role: sellerInfo.role
-        });
-      } catch (err) {
-        console.error('Failed to load seller info:', err);
-      }
+      // Load seller info in parallel
+      getUserProfile(found.userId)
+        .then(sellerInfo => {
+          setSeller({
+            id: sellerInfo.id,
+            email: sellerInfo.email,
+            name: sellerInfo.name || 'User',
+            joinedDate: sellerInfo.created_at,
+            listingCount: sellerInfo.listing_count,
+            isVerified: sellerInfo.is_verified,
+            role: sellerInfo.role
+          });
+        })
+        .catch(err => console.error('Failed to load seller info:', err));
       
-      // Load related listings (same category, different listing)
-      try {
-        const allListings = await getListings();
-        const related = allListings
-          .filter(l => 
-            l.category === found.category && 
-            l.id !== found.id && 
-            l.status === 'active'
-          )
-          .slice(0, 3);
-        setRelatedListings(related);
-      } catch (err) {
-        console.error('Failed to load related listings:', err);
-      }
+      // Load related listings
+      const related = allListings
+        .filter(l => 
+          l.category === found.category && 
+          l.id !== found.id && 
+          l.status === 'active'
+        )
+        .slice(0, 3);
+      setRelatedListings(related);
       
       setIsLoading(false);
       
@@ -105,17 +97,6 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
       console.error('❌ Error loading listing details:', error);
       setError(error.message || 'Failed to load listing details');
       setIsLoading(false);
-    }
-  };
-
-  const handleContactClick = async () => {
-    setShowContact(true);
-    
-    // Increment contact clicks (non-blocking)
-    if (listing) {
-      incrementContactClicks(listing.id).catch(err =>
-        console.error('Failed to increment contact clicks:', err)
-      );
     }
   };
 
@@ -127,7 +108,6 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
         url: window.location.href,
       });
     } else {
-      // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
       alert('Link copied to clipboard');
     }
@@ -350,39 +330,30 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
                     <span className="uppercase">Active Listings:</span> {seller.listingCount}
                   </div>
 
-                  {!showContact ? (
-                    <Button 
-                      onClick={handleContactClick}
-                      className="w-full"
-                    >
-                      <Phone size={16} className="mr-2" /> Reveal Contact
-                    </Button>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="bg-surfaceHighlight border border-accent p-4">
-                        <div className="flex items-center gap-2 text-xs font-mono uppercase text-secondary mb-2">
-                          <Mail size={12} /> Email
-                        </div>
-                        <a 
-                          href={`mailto:${seller.email}`}
-                          className="text-sm underline hover:text-accent transition-colors"
-                        >
-                          {seller.email}
-                        </a>
+                  <div className="space-y-4">
+                    <div className="bg-surfaceHighlight border border-accent p-4">
+                      <div className="flex items-center gap-2 text-xs font-mono uppercase text-secondary mb-2">
+                        <Mail size={12} /> Email
                       </div>
-                      <div className="bg-surfaceHighlight border border-accent p-4">
-                        <div className="flex items-center gap-2 text-xs font-mono uppercase text-secondary mb-2">
-                          <Phone size={12} /> Phone (Demo)
-                        </div>
-                        <a 
-                          href="tel:+355691234567"
-                          className="text-sm underline hover:text-accent transition-colors"
-                        >
-                          +355 69 123 4567
-                        </a>
-                      </div>
+                      <a 
+                        href={`mailto:${seller.email}`}
+                        className="text-sm underline hover:text-accent transition-colors"
+                      >
+                        {seller.email}
+                      </a>
                     </div>
-                  )}
+                    <div className="bg-surfaceHighlight border border-accent p-4">
+                      <div className="flex items-center gap-2 text-xs font-mono uppercase text-secondary mb-2">
+                        <Phone size={12} /> Phone
+                      </div>
+                      <a 
+                        href={`tel:${listing.phone}`}
+                        className="text-sm underline hover:text-accent transition-colors"
+                      >
+                        {listing.phone}
+                      </a>
+                    </div>
+                  </div>
                 </Card>
               )}
 
@@ -426,9 +397,7 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listingId, onBack, curren
                   key={related.id}
                   className="p-0 cursor-pointer group overflow-hidden"
                   onClick={() => {
-                    // Reload with new listing ID
                     window.scrollTo(0, 0);
-                    // This will trigger the parent to change listingId
                   }}
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-surfaceHighlight">
