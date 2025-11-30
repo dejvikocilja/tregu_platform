@@ -26,6 +26,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
     currency: 'EUR',
     location: '',
     description: '',
+    phone: '',
     images: [] as string[],
     imageFiles: [] as File[],
   });
@@ -72,6 +73,11 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
         setError('Description is required.');
         return;
     }
+    
+    if(!formData.phone.trim()) {
+    setError('Phone number is required.');
+    return;
+}
     
     if(!formData.price || Number(formData.price) <= 0) {
         setError('Please enter a valid price.');
@@ -126,6 +132,7 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
               currency: formData.currency as 'LEK' | 'EUR',
               category: formData.category,
               location: formData.location.trim(),
+              phone: formData.phone.trim(), 
               images: uploadedImageUrls.length > 0 ? uploadedImageUrls : ['https://picsum.photos/600/400'],
               is_boosted: type === ListingType.FEATURED
           });
@@ -322,6 +329,22 @@ const CreateListing: React.FC<CreateListingProps> = ({ currentUser, onSuccess, o
                         ))}
                     </Select>
                 </div>
+
+              <div>
+    <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
+      Phone Number *
+    </label>
+    <input 
+      type="tel" 
+      name="phone" 
+      value={formData.phone} 
+      onChange={handleChange} 
+      placeholder="+355 69 123 4567" 
+      required 
+      disabled={isProcessing}
+      className="w-full bg-surface border-b border-border px-0 py-4 text-white placeholder-secondary focus:outline-none focus:border-white transition-colors duration-300 font-mono text-sm"
+    />
+</div>
                 
                 <div>
                     <label className="block text-[10px] font-mono uppercase tracking-widest text-secondary mb-2">
