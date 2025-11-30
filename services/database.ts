@@ -268,6 +268,7 @@ export const updateListing = async (
     phone: string;
     images: string[];
     status: string;
+    is_boosted: boolean;
   }>
 ) => {
   console.log(`📝 Updating listing ${listingId}...`);
