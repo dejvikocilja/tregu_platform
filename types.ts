@@ -32,6 +32,7 @@ export interface Listing {
   currency: 'LEK' | 'EUR';
   category: Category;
   location: string;
+  phone: string;
   images: string[];
   createdAt: string;
   type: ListingType;
